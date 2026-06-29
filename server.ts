@@ -625,6 +625,8 @@ function notifyClientsOfUpdate() {
 
 function writeDb(data: DbStore, keysToSync?: Array<keyof DbStore>) {
   dbMemoryCache = data;
+  
+  // 1. Local filesystem save (gracefully caught & ignored if read-only filesystem)
   try {
     const parentDir = path.dirname(STORE_PATH);
     if (!fs.existsSync(parentDir)) {
@@ -636,9 +638,13 @@ function writeDb(data: DbStore, keysToSync?: Array<keyof DbStore>) {
     const cache = readCache();
     cache.db = {};
     writeCache(cache);
+  } catch (localWriteErr) {
+    console.warn("[Local File Storage] Failed to write database to local disk (expected on read-only serverless platforms like Netlify):", localWriteErr);
+  }
 
-    // Sync to Firestore Cloud in background asynchronously
-    if (firestore) {
+  // 2. Sync to Firestore Cloud in background asynchronously
+  if (firestore) {
+    try {
       // Auto-detect if this is an administrative or manual save action to bypass and clear temporary quota suspends
       const adminKeys: Array<keyof DbStore> = ["profileDetails", "projects", "milestones", "photos", "socialLinks", "stats", "securityQuestions"];
       const isSyncingAdminKeys = !keysToSync || keysToSync.some(key => adminKeys.includes(key));
@@ -701,12 +707,16 @@ function writeDb(data: DbStore, keysToSync?: Array<keyof DbStore>) {
           console.log("[Firestore] No changes detected across keys. Skipping cloud synchronized writes to preserve free-tier quotas.");
         }
       }
+    } catch (firestoreErr) {
+      console.error("[Firestore Sync Action] Error during Firestore sync preparation:", firestoreErr);
     }
+  }
 
-    // Notify all connected SSE client tabs of the database update in real-time
+  // 3. Notify all connected SSE client tabs of the database update in real-time
+  try {
     notifyClientsOfUpdate();
-  } catch (err) {
-    console.error("Failed to write to database store:", err);
+  } catch (sseErr) {
+    console.warn("[SSE Notify] Failed to notify SSE clients:", sseErr);
   }
 }
 
@@ -768,7 +778,11 @@ async function syncFromFirestore() {
         securityQuestions: tempStore.securityQuestions ?? DEFAULT_STORE.securityQuestions
       };
       // Also sync it on disk locally to keep fallback files ready
-      fs.writeFileSync(STORE_PATH, JSON.stringify(dbMemoryCache, null, 2), "utf-8");
+      try {
+        fs.writeFileSync(STORE_PATH, JSON.stringify(dbMemoryCache, null, 2), "utf-8");
+      } catch (localFileErr) {
+        console.warn("[Local File Storage] Failed to write database fallback copy to disk (expected on serverless):", localFileErr);
+      }
 
       // Initialize startup sync baseline to prevent immediately sync-writing old keys back
       Object.keys(dbMemoryCache).forEach((key) => {
@@ -826,7 +840,11 @@ async function syncFromFirestore() {
           };
           
           // Sync it on disk locally
-          fs.writeFileSync(STORE_PATH, JSON.stringify(dbMemoryCache, null, 2), "utf-8");
+          try {
+            fs.writeFileSync(STORE_PATH, JSON.stringify(dbMemoryCache, null, 2), "utf-8");
+          } catch (localFileErr) {
+            console.warn("[Local File Storage] Failed to write database copy to disk inside onSnapshot (expected on serverless):", localFileErr);
+          }
 
           // Update lastSyncedKeys baseline from remote change to prevent echo-syncs
           Object.keys(dbMemoryCache).forEach((key) => {
@@ -2268,7 +2286,11 @@ app.post("/api/admin/reset-database", async (req, res) => {
 
     // Update memory cache and write to disk
     dbMemoryCache = cleanDb;
-    fs.writeFileSync(STORE_PATH, JSON.stringify(cleanDb, null, 2), "utf-8");
+    try {
+      fs.writeFileSync(STORE_PATH, JSON.stringify(cleanDb, null, 2), "utf-8");
+    } catch (localFileErr) {
+      console.warn("[Local File Storage] Failed to write reset database to disk (expected on serverless):", localFileErr);
+    }
 
     // If Firestore is active, force-write all cleanDb keys to overwrite cloud documents and delete any leftover chunks
     if (firestore) {
