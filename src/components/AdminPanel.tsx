@@ -6,6 +6,7 @@ import {
   RefreshCw, ChevronDown, FileText
 } from 'lucide-react';
 import { ArchivePhoto, JourneyMilestone, Recommendation, FollowerStats, BlogPost, GalleryItem, ProjectItem, SocialLink, ProfileDetails, ContactMessage, SecurityQuestion } from '../types';
+import { getApiUrl } from '../utils/api';
 
 interface ImageUploaderProps {
   value: string;
@@ -87,7 +88,7 @@ const uploadFileToCloudinary = async (file: File): Promise<string> => {
   const compressedFile = await compressImage(file);
   const formData = new FormData();
   formData.append('image', compressedFile);
-  const response = await fetch('/api/upload', {
+  const response = await fetch(getApiUrl('/api/upload'), {
     method: 'POST',
     body: formData,
   });
@@ -561,7 +562,7 @@ export default function AdminPanel({
   const handleRefreshMessages = async () => {
     setIsRefreshingMessages(true);
     try {
-      const response = await fetch("/api/site-data");
+      const response = await fetch(getApiUrl("/api/site-data"));
       if (!response.ok) throw new Error("Could not fetch latest telemetry.");
       const data = await response.json();
       if (data && data.messages) {
@@ -591,7 +592,7 @@ export default function AdminPanel({
 
   const fetchSyncStatus = async () => {
     try {
-      const res = await fetch("/api/admin/sync-status");
+      const res = await fetch(getApiUrl("/api/admin/sync-status"));
       if (res.ok) {
         const data = await res.json();
         setSyncStatus(data);
@@ -605,7 +606,7 @@ export default function AdminPanel({
     setSyncLoading(true);
     setSyncMessage(null);
     try {
-      const res = await fetch("/api/admin/force-sync", { method: "POST" });
+      const res = await fetch(getApiUrl("/api/admin/force-sync"), { method: "POST" });
       const data = await res.json();
       if (res.ok && data.success) {
         setSyncMessage("✓ Sync Success!");
@@ -643,7 +644,7 @@ export default function AdminPanel({
     setResetLoading(true);
     setSyncMessage(null);
     try {
-      const res = await fetch("/api/admin/reset-database", { method: "POST" });
+      const res = await fetch(getApiUrl("/api/admin/reset-database"), { method: "POST" });
       const data = await res.json();
       if (res.ok && data.success) {
         alert("Success: Database cache and Firestore wiped clean!");
@@ -729,7 +730,7 @@ export default function AdminPanel({
     currentMessages = messages
   ) => {
     try {
-      const response = await fetch("/api/admin/save-all", {
+      const response = await fetch(getApiUrl("/api/admin/save-all"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -781,7 +782,7 @@ export default function AdminPanel({
   const handleMasterSave = async () => {
     setIsSaving(true);
     try {
-      const response = await fetch("/api/admin/save-all", {
+      const response = await fetch(getApiUrl("/api/admin/save-all"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

@@ -17,6 +17,7 @@ import {
 } from "./data/initialData";
 import Lightbox from "./components/Lightbox";
 import AdminPanel from "./components/AdminPanel";
+import { getApiUrl } from "./utils/api";
 
 interface ItemImageCarouselProps {
   images?: string[];
@@ -591,7 +592,7 @@ export default function App() {
 
   // Shared site data fetcher
   const fetchData = () => {
-    fetch("/api/site-data")
+    fetch(getApiUrl("/api/site-data"))
       .then(res => res.json())
       .then(siteData => {
         if (siteData) {
@@ -641,7 +642,7 @@ export default function App() {
     console.log("[SSE] Connecting persistent administrative live-sync updates channel...");
     let eventSource: EventSource | null = null;
     try {
-      eventSource = new EventSource("/api/realtime-updates");
+      eventSource = new EventSource(getApiUrl("/api/realtime-updates"));
       eventSource.onmessage = (event) => {
         if (event.data === "update") {
           console.log("[SSE Real-Time Sync] Backend database change detected. Re-fetching site details automatically...");
@@ -682,7 +683,7 @@ export default function App() {
       }
       hasRegisteredVisitThisBundleLoad = true;
 
-      fetch("/api/click-visit", {
+      fetch(getApiUrl("/api/click-visit"), {
         method: "POST"
       })
         .then(res => res.json())
@@ -916,7 +917,7 @@ export default function App() {
 
     // 2. Fallback to API check in case they customized the combination in server.ts or environment variables
     try {
-      const response = await fetch("/api/admin/verify-combination", {
+      const response = await fetch(getApiUrl("/api/admin/verify-combination"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ combination: gearValues })
@@ -993,7 +994,7 @@ export default function App() {
       message: newTestimony.message
     };
 
-    fetch("/api/recommendations/submit", {
+    fetch(getApiUrl("/api/recommendations/submit"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(recPayload)
@@ -1024,7 +1025,7 @@ export default function App() {
     setContactSubmitting(true);
     setContactError("");
 
-    fetch("/api/contact/submit", {
+    fetch(getApiUrl("/api/contact/submit"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(contactForm)
@@ -1051,7 +1052,7 @@ export default function App() {
   const handleSubscribe = (e: React.FormEvent) => {
     e.preventDefault();
     if (newsletterEmail) {
-      fetch("/api/subscribe", { method: "POST" })
+      fetch(getApiUrl("/api/subscribe"), { method: "POST" })
         .then(res => {
           if (!res.ok) throw new Error("Could not subscribe");
           return res.json();
@@ -1081,7 +1082,7 @@ export default function App() {
     try {
       if (currentVote === type) {
         // Undo previous vote (decrement)
-        const res = await fetch(`/api/blogs/${type}`, {
+        const res = await fetch(getApiUrl(`/api/blogs/${type}`), {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ id, decrement: true })
@@ -1093,7 +1094,7 @@ export default function App() {
       } else if (currentVote && currentVote !== type) {
         // Toggle vote (decrement old, increment new)
         // 1. Decrement old vote
-        const resOld = await fetch(`/api/blogs/${currentVote}`, {
+        const resOld = await fetch(getApiUrl(`/api/blogs/${currentVote}`), {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ id, decrement: true })
@@ -1101,7 +1102,7 @@ export default function App() {
         if (!resOld.ok) throw new Error("Undo previous vote failed");
         
         // 2. Increment new vote
-        const resNew = await fetch(`/api/blogs/${type}`, {
+        const resNew = await fetch(getApiUrl(`/api/blogs/${type}`), {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ id, decrement: false })
@@ -1112,7 +1113,7 @@ export default function App() {
         setUserVotes(prev => ({ ...prev, [id]: type }));
       } else {
         // New vote (increment)
-        const res = await fetch(`/api/blogs/${type}`, {
+        const res = await fetch(getApiUrl(`/api/blogs/${type}`), {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ id, decrement: false })
@@ -1135,7 +1136,7 @@ export default function App() {
       return;
     }
 
-    fetch("/api/blogs/comment", {
+    fetch(getApiUrl("/api/blogs/comment"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -1172,7 +1173,7 @@ export default function App() {
     try {
       if (currentVote === type) {
         // Undo previous vote (decrement)
-        const res = await fetch(`/api/gallery/${type}`, {
+        const res = await fetch(getApiUrl(`/api/gallery/${type}`), {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ id, decrement: true })
@@ -1184,7 +1185,7 @@ export default function App() {
       } else if (currentVote && currentVote !== type) {
         // Toggle vote (decrement old, increment new)
         // 1. Decrement old vote
-        const resOld = await fetch(`/api/gallery/${currentVote}`, {
+        const resOld = await fetch(getApiUrl(`/api/gallery/${currentVote}`), {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ id, decrement: true })
@@ -1192,7 +1193,7 @@ export default function App() {
         if (!resOld.ok) throw new Error("Undo previous vote failed");
         
         // 2. Increment new vote
-        const resNew = await fetch(`/api/gallery/${type}`, {
+        const resNew = await fetch(getApiUrl(`/api/gallery/${type}`), {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ id, decrement: false })
@@ -1203,7 +1204,7 @@ export default function App() {
         setUserVotes(prev => ({ ...prev, [id]: type }));
       } else {
         // New vote (increment)
-        const res = await fetch(`/api/gallery/${type}`, {
+        const res = await fetch(getApiUrl(`/api/gallery/${type}`), {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ id, decrement: false })
@@ -1226,7 +1227,7 @@ export default function App() {
       return;
     }
 
-    fetch("/api/gallery/comment", {
+    fetch(getApiUrl("/api/gallery/comment"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -1258,7 +1259,7 @@ export default function App() {
   };
 
   const handleBlogReplySubmit = async (blogId: string, parentId: string, name: string, email: string, message: string) => {
-    const res = await fetch("/api/blogs/comment", {
+    const res = await fetch(getApiUrl("/api/blogs/comment"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id: blogId, parentId, name, email, message })
@@ -1269,7 +1270,7 @@ export default function App() {
   };
 
   const handleGalleryReplySubmit = async (itemId: string, parentId: string, name: string, email: string, message: string) => {
-    const res = await fetch("/api/gallery/comment", {
+    const res = await fetch(getApiUrl("/api/gallery/comment"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id: itemId, parentId, name, email, message })
@@ -1281,7 +1282,7 @@ export default function App() {
 
   // Approval handler for admin moderation
   const handleApproveRecommendation = (id: string) => {
-    fetch("/api/recommendations/approve", {
+    fetch(getApiUrl("/api/recommendations/approve"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id })
@@ -1299,7 +1300,7 @@ export default function App() {
   // Deletion handler for admin moderation
   const handleDeleteRecommendation = (id: string) => {
     if (window.confirm("Verify review rejection/deletion in database?")) {
-      fetch("/api/recommendations/delete", {
+      fetch(getApiUrl("/api/recommendations/delete"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id })
@@ -1317,7 +1318,7 @@ export default function App() {
 
   // Social Stats updater for admin change requests
   const handleUpdateSocialStats = (updatedStats: FollowerStats) => {
-    fetch("/api/admin/update-social-stats", {
+    fetch(getApiUrl("/api/admin/update-social-stats"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
