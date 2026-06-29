@@ -894,6 +894,27 @@ export default function App() {
     if (lockoutTimer > 0 || gearUnlockSuccess) return;
     setGatekeeperError(null);
 
+    // 1. First check client-side directly for maximum reliability (especially on static hosts like Netlify/Vercel)
+    const combinationStr = gearValues.map(String).join("");
+    const msgBuffer = new TextEncoder().encode(combinationStr);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    
+    const targetHash = "9ea8a37aaadadd2e04edf3161db85add4f075e3459acba9b0fe2320c5215b101"; // Default SHA-256 for "777358"
+    
+    if (hashHex === targetHash) {
+      setGearUnlockSuccess(true);
+      setConsecutiveAttempts(0);
+      setTimeout(() => {
+        setIsGatekeeperOpen(false);
+        setIsLoginModalOpen(true); // reveals standard login
+        setGearUnlockSuccess(false);
+      }, 1200);
+      return; // Direct client-side success! Bypasses any server mismatch, outdated builds, or proxy issues on Netlify.
+    }
+
+    // 2. Fallback to API check in case they customized the combination in server.ts or environment variables
     try {
       const response = await fetch("/api/admin/verify-combination", {
         method: "POST",
@@ -910,7 +931,7 @@ export default function App() {
           setGearUnlockSuccess(false);
         }, 1200);
       } else {
-        const errData = await response.json();
+        const errData = await response.json().catch(() => ({ error: null }));
         const nextAttempts = consecutiveAttempts + 1;
         setConsecutiveAttempts(nextAttempts);
         
@@ -922,32 +943,14 @@ export default function App() {
         }
       }
     } catch (err) {
-      // Fallback verification using Client-side Cryptographic Subtle SHA-256
-      const combinationStr = gearValues.join("");
-      const msgBuffer = new TextEncoder().encode(combinationStr);
-      const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
-      const hashArray = Array.from(new Uint8Array(hashBuffer));
-      const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-      
-      const targetHash = "9ea8a37aaadadd2e04edf3161db85add4f075e3459acba9b0fe2320c5215b101"; // Default SHA-256 for "777358"
-      
-      if (hashHex === targetHash) {
-        setGearUnlockSuccess(true);
-        setConsecutiveAttempts(0);
-        setTimeout(() => {
-          setIsGatekeeperOpen(false);
-          setIsLoginModalOpen(true);
-          setGearUnlockSuccess(false);
-        }, 1200);
+      // If server is 100% offline or unreachable and client hash also failed
+      const nextAttempts = consecutiveAttempts + 1;
+      setConsecutiveAttempts(nextAttempts);
+      if (nextAttempts >= 3) {
+        setLockoutTimer(2);
+        setGatekeeperError("Security lockdown active: Cyber-vault security system has auto-frozen due to multiple alignment failures. Try again in 2s.");
       } else {
-        const nextAttempts = consecutiveAttempts + 1;
-        setConsecutiveAttempts(nextAttempts);
-        if (nextAttempts >= 3) {
-          setLockoutTimer(2);
-          setGatekeeperError("Security lockdown active: Cyber-vault security system has auto-frozen due to multiple alignment failures. Try again in 2s.");
-        } else {
-          setGatekeeperError("Lock system reject: Mechanical combination aligned incorrectly.");
-        }
+        setGatekeeperError("Lock system reject: Mechanical combination aligned incorrectly.");
       }
     }
   };
