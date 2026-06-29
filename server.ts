@@ -30,6 +30,14 @@ const upload = multer({ dest: os.tmpdir() });
 const app = express();
 const PORT = 3000;
 
+// Normalize request URLs that contain the "/bo" subdirectory prefix (when hosted at srrejvi.com/bo)
+app.use((req, res, next) => {
+  if (req.url && req.url.startsWith("/bo/api")) {
+    req.url = req.url.substring(3); // Strips "/bo" leaving "/api..."
+  }
+  next();
+});
+
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ limit: "50mb", extended: true }));
 
