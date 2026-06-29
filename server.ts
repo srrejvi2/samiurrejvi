@@ -2124,7 +2124,7 @@ app.post("/api/admin/verify-combination", (req, res) => {
   const envHash = process.env.ADMIN_GEAR_COMBINATION_HASH;
   const targetHash = envHash && envHash.trim() !== ""
     ? envHash.trim()
-    : "ad8251cf45ccda7c5520e7df65049386d62d294ef3bd6dae360f089196b0bd56"; // Default SHA-256 for "427"
+    : "9ea8a37aaadadd2e04edf3161db85add4f075e3459acba9b0fe2320c5215b101"; // Default SHA-256 for "777358"
 
   const isVerified = candidateHash === targetHash;
 

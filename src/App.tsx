@@ -929,7 +929,7 @@ export default function App() {
       const hashArray = Array.from(new Uint8Array(hashBuffer));
       const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
       
-      const targetHash = "ad8251cf45ccda7c5520e7df65049386d62d294ef3bd6dae360f089196b0bd56"; // Default SHA-256 for "427"
+      const targetHash = "9ea8a37aaadadd2e04edf3161db85add4f075e3459acba9b0fe2320c5215b101"; // Default SHA-256 for "777358"
       
       if (hashHex === targetHash) {
         setGearUnlockSuccess(true);
