@@ -2121,7 +2121,10 @@ app.post("/api/admin/verify-combination", (req, res) => {
   const candidateHash = crypto.createHash("sha256").update(combinationStr).digest("hex");
   
   // Secure SHA-256 target verification
-  const targetHash = "9ea8a37aaadadd2e04edf3161db85add4f075e3459acba9b0fe2320c5215b101";
+  const envHash = process.env.ADMIN_GEAR_COMBINATION_HASH;
+  const targetHash = envHash && envHash.trim() !== ""
+    ? envHash.trim()
+    : "ad8251cf45ccda7c5520e7df65049386d62d294ef3bd6dae360f089196b0bd56"; // Default SHA-256 for "427"
 
   const isVerified = candidateHash === targetHash;
 
