@@ -10,6 +10,7 @@ import { createServer as createViteServer } from "vite";
 import { initializeApp } from "firebase/app";
 import { getFirestore, doc, getDoc, setDoc, setLogLevel, onSnapshot, collection, getDocs, deleteDoc } from "firebase/firestore";
 import { put } from "@vercel/blob";
+import localDbStore from "./src/data/db_store.json";
 
 dotenv.config();
 
@@ -429,6 +430,40 @@ function readDb(): DbStore {
           : DEFAULT_STORE.profileDetails,
         photos: parsed.photos ?? DEFAULT_STORE.photos,
         securityQuestions: parsed.securityQuestions ?? DEFAULT_STORE.securityQuestions
+      };
+
+      // Populate base sync baseline on initial load
+      Object.keys(dbMemoryCache).forEach((key) => {
+        if (lastSyncedKeys[key] === undefined) {
+          lastSyncedKeys[key] = JSON.stringify(dbMemoryCache![key as keyof DbStore]);
+        }
+      });
+
+      return dbMemoryCache!;
+    } else {
+      console.log("[Serverless Guard] Physical file not found at STORE_PATH. Falling back to statically imported localDbStore...");
+      dbMemoryCache = {
+        visitorCount: (localDbStore as any).visitorCount ?? DEFAULT_STORE.visitorCount,
+        stats: (localDbStore as any).stats ?? DEFAULT_STORE.stats,
+        recommendations: (localDbStore as any).recommendations ?? DEFAULT_STORE.recommendations,
+        blogs: (localDbStore as any).blogs ?? DEFAULT_STORE.blogs,
+        gallery: (localDbStore as any).gallery ?? DEFAULT_STORE.gallery,
+        projects: (localDbStore as any).projects ?? DEFAULT_STORE.projects,
+        milestones: (localDbStore as any).milestones ?? DEFAULT_STORE.milestones,
+        messages: (localDbStore as any).messages ?? [],
+        socialLinks: (localDbStore as any).socialLinks ?? DEFAULT_STORE.socialLinks,
+        profileDetails: (localDbStore as any).profileDetails 
+          ? { 
+              ...(localDbStore as any).profileDetails, 
+              customInstitutions: (localDbStore as any).profileDetails.customInstitutions ?? [],
+              cvDownloadUrl: (localDbStore as any).profileDetails.cvDownloadUrl ?? "",
+              blogSectionTagline: (localDbStore as any).profileDetails.blogSectionTagline ?? DEFAULT_STORE.profileDetails.blogSectionTagline,
+              blogSectionTitle: (localDbStore as any).profileDetails.blogSectionTitle ?? DEFAULT_STORE.profileDetails.blogSectionTitle,
+              blogSectionDescription: (localDbStore as any).profileDetails.blogSectionDescription ?? DEFAULT_STORE.profileDetails.blogSectionDescription
+            }
+          : DEFAULT_STORE.profileDetails,
+        photos: (localDbStore as any).photos ?? DEFAULT_STORE.photos,
+        securityQuestions: (localDbStore as any).securityQuestions ?? DEFAULT_STORE.securityQuestions
       };
 
       // Populate base sync baseline on initial load
