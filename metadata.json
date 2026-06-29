@@ -1,0 +1,6 @@
+{
+  "name": "Personal Website Creator",
+  "description": "An interactive personal website builder with live-editable previews, multiple professional themes, AI-powered content enhancers, and standalone HTML exporting.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

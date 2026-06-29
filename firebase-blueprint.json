@@ -1,0 +1,59 @@
+{
+  "entities": {
+    "PortfolioStore": {
+      "title": "PortfolioStore",
+      "description": "Unified backup blueprint storing all custom user portfolio details.",
+      "type": "object",
+      "properties": {
+        "visitorCount": {
+          "type": "integer"
+        },
+        "stats": {
+          "type": "object"
+        },
+        "recommendations": {
+          "type": "array"
+        },
+        "blogs": {
+          "type": "array"
+        },
+        "gallery": {
+          "type": "array"
+        },
+        "projects": {
+          "type": "array"
+        },
+        "milestones": {
+          "type": "array"
+        },
+        "messages": {
+          "type": "array"
+        },
+        "socialLinks": {
+          "type": "object"
+        },
+        "profileDetails": {
+          "type": "object"
+        },
+        "photos": {
+          "type": "array"
+        },
+        "securityQuestions": {
+          "type": "array"
+        }
+      },
+      "required": [
+        "visitorCount",
+        "profileDetails",
+        "blogs",
+        "projects"
+      ]
+    }
+  },
+  "firestore": {
+    "portfolio/{documentId}": {
+      "schema": "PortfolioStore",
+      "description": "Standard snapshot collections of the app's state"
+    }
+  }
+}
